@@ -46,7 +46,7 @@ dependencies {
     implementation("mysql:mysql-connector-java:8.0.30")
     testImplementation("io.ktor:ktor-server-tests-jvm:$ktor_version")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
-    testImplementation(kotlin("test"))
+//    testImplementation(kotlin("test"))
 
 
     // aws dependencies

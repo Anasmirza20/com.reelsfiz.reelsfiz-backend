@@ -5,11 +5,11 @@ import aws.sdk.kotlin.services.s3.model.*
 import aws.smithy.kotlin.runtime.content.asByteStream
 import aws.smithy.kotlin.runtime.content.writeToFile
 import com.reelsfiz.Constants.REELS_BUCKET
+import com.reelsfiz.Constants.REGION
 import java.io.File
 import java.io.UnsupportedEncodingException
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-import java.nio.file.Paths
 
 suspend fun putDataInBucket() {
     val args = arrayOf(REELS_BUCKET, "jkfd", "/Users/anasmirza/Desktop/qwe.png")
@@ -29,15 +29,14 @@ suspend fun putDataInBucket() {
 
     val bucketName = args[0]
     val key = args[1]
-    val objectPath = args[2]
-/*    val savePath = args[3]
-    val toBucket = args[4]*/
+    val objectPath = args[2]/*    val savePath = args[3]
+        val toBucket = args[4]*/
 
     // Create an Amazon S3 bucket.
-    createBucket(bucketName)
+//    createBucket(bucketName)
 
     // Update a local file to the Amazon S3 bucket.
-    putObject(bucketName, key, objectPath)
+//    putObject(bucketName, key, objectPath)
 
     /* // Download the object to another local file.
      getObject(bucketName, key, savePath)
@@ -62,38 +61,37 @@ suspend fun createBucket(bucketName: String) {
         bucket = bucketName
     }
 
-    S3Client { region = "us-east-1" }.use { s3 ->
+    val s3Client = S3Client { region = REGION }.use { s3 ->
         s3.createBucket(request)
         println("$bucketName is ready")
     }
 }
 
-suspend fun putObject(bucketName: String, objectKey: String, objectPath: String) {
-
-    val metadataVal = mutableMapOf<String, String>()
-    metadataVal["myVal"] = "test"
-
+suspend fun putObject(bucketName: String, objectKey: String, objectPath: String, result: (String) -> Unit) {
+    val body = File(objectPath).asByteStream()
     val request = PutObjectRequest {
         bucket = bucketName
         key = objectKey
-        metadata = metadataVal
-        this.body = Paths.get(objectPath).asByteStream()
+        contentType = "video/mp4"
+        body.contentLength?.let { contentLength = it }
+        this.body = body
     }
 
-    S3Client { region = "ap-south-1" }.use { s3 ->
-        val response = s3.putObject(request)
-        println("Tag information is ${response.eTag}")
+    S3Client { region = REGION }.use { s3 ->
+        s3.putObject(request)
+        val url = "https://$REELS_BUCKET.s3.$REGION.amazonaws.com/"
+        result(url)
     }
 }
 
-suspend fun getObject(bucketName: String, keyName: String, path: String) {
+suspend fun getObject(bucketName: String, keyName: String, path: String, result: (PutObjectResponse) -> Unit) {
 
     val request = GetObjectRequest {
         key = keyName
         bucket = bucketName
     }
 
-    S3Client { region = "us-east-1" }.use { s3 ->
+    S3Client { region = REGION }.use { s3 ->
         s3.getObject(request) { resp ->
             val myFile = File(path)
             resp.body?.writeToFile(myFile)
@@ -108,7 +106,7 @@ suspend fun listBucketObs(bucketName: String) {
         bucket = bucketName
     }
 
-    S3Client { region = "us-east-1" }.use { s3 ->
+    S3Client { region = REGION }.use { s3 ->
 
         val response = s3.listObjects(request)
         response.contents?.forEach { myObject ->
@@ -132,7 +130,7 @@ suspend fun copyBucketOb(fromBucket: String, objectKey: String, toBucket: String
         bucket = toBucket
         key = objectKey
     }
-    S3Client { region = "us-east-1" }.use { s3 ->
+    S3Client { region = REGION }.use { s3 ->
         s3.copyObject(request)
     }
 }
@@ -152,7 +150,7 @@ suspend fun deleteBucketObs(bucketName: String, objectName: String) {
         delete = delOb
     }
 
-    S3Client { region = "us-east-1" }.use { s3 ->
+    S3Client { region = REGION }.use { s3 ->
         s3.deleteObjects(request)
         println("$objectName was deleted from $bucketName")
     }
@@ -163,7 +161,7 @@ suspend fun deleteBucket(bucketName: String?) {
     val request = DeleteBucketRequest {
         bucket = bucketName
     }
-    S3Client { region = "us-east-1" }.use { s3 ->
+    S3Client { region = REGION }.use { s3 ->
         s3.deleteBucket(request)
         println("The $bucketName was successfully deleted!")
     }

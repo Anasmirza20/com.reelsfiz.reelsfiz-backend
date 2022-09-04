@@ -5,18 +5,35 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ReelsModel(
-    val name: String? = null,
+    var name: String? = null,
     var path: String? = null,
     var url: String? = null,
-    val userId: Long? = null,
-    val userProfileUrl: String? = null,
+    var userId: Long? = null,
+    var userProfileUrl: String? = null,
     var sizeInMB: String? = null,
-    val categoryId: Int? = null,
-    val userName: String? = null,
-    val likeCount: Int = 0,
-    val commentCount: Int = 0,
+    var categoryId: Int? = null,
+    var userName: String? = null,
+    var likeCount: Int = 0,
+    var commentCount: Int = 0,
     var downloadCount: Int = 0,
-    val createdAt: String? = null,
-    val timeStamp: String? = null,
+    var createdAt: String? = null,
+    var timeStamp: String? = null,
     var id: Int = 0
 )
+
+object ReelsKeys {
+    const val NAME                  = "name"
+    const val PATH                  = "path"
+    const val URL                   = "url"
+    const val USER_ID               = "userId"
+    const val USER_PROFILE_URL      = "userProfileUrl"
+    const val SIZE_IN_MB            = "sizeInMB"
+    const val CATEGORY_ID           = "categoryId"
+    const val USER_NAME             = "userName"
+    const val LIKE_COUNT            = "likeCount"
+    const val COMMENT_COUNT         ="commentCount"
+    const val DOWNLOAD_COUNT        = "downloadCount"
+    const val CREATED_AT            = "createdAt"
+    const val TIME_STAMP            = "timeStamp"
+    const val ID                    = "id"
+}

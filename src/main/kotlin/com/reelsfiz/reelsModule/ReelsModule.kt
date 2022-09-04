@@ -1,8 +1,20 @@
 package com.reelsfiz.reelsModule
 
+import com.reelsfiz.Constants
 import com.reelsfiz.db.DatabaseConnection
 import com.reelsfiz.models.BaseModel
+import com.reelsfiz.models.ReelsKeys.CATEGORY_ID
+import com.reelsfiz.models.ReelsKeys.CREATED_AT
+import com.reelsfiz.models.ReelsKeys.NAME
+import com.reelsfiz.models.ReelsKeys.PATH
+import com.reelsfiz.models.ReelsKeys.SIZE_IN_MB
+import com.reelsfiz.models.ReelsKeys.TIME_STAMP
+import com.reelsfiz.models.ReelsKeys.URL
+import com.reelsfiz.models.ReelsKeys.USER_ID
+import com.reelsfiz.models.ReelsKeys.USER_NAME
+import com.reelsfiz.models.ReelsKeys.USER_PROFILE_URL
 import com.reelsfiz.models.ReelsModel
+import com.reelsfiz.putObject
 import com.reelsfiz.tables.ReelsEntity
 import io.ktor.http.*
 import io.ktor.http.content.*
@@ -20,6 +32,8 @@ import java.io.File
 fun Application.reelsRoutes() {
     val db = DatabaseConnection.database
     routing {
+
+        uploadReel()
         get("/getReels") {
             val reels = db.from(ReelsEntity).select().map {
                 ReelsModel(
@@ -49,8 +63,52 @@ fun Application.reelsRoutes() {
             )
         }
 
-        post("/postReels") {
-            val reel = call.receive<ReelsModel>()
+        post("/postReel") {
+//            val reel = call.receive<ReelsModel>()
+
+            val multipartData = call.receiveMultipart()
+
+            var fileName: String
+            val reel = ReelsModel()
+            var url: String
+            multipartData.forEachPart { part ->
+                when (part) {
+                    is PartData.FormItem -> {
+                        when (part.name) {
+                            NAME -> reel.name = part.value
+                            PATH -> reel.path = part.value
+                            URL -> reel.url = part.value
+                            USER_ID -> reel.userId = part.value.toLong()
+                            USER_PROFILE_URL -> reel.userProfileUrl = part.value
+                            SIZE_IN_MB -> reel.sizeInMB = part.value
+                            CATEGORY_ID -> reel.categoryId = part.value.toInt()
+                            USER_NAME -> reel.userName = part.value
+                            CREATED_AT -> reel.createdAt = part.value
+                            TIME_STAMP -> reel.timeStamp = part.value
+                        }
+                    }
+
+                    is PartData.FileItem -> {
+                        kotlin.runCatching {
+                            fileName = part.originalFileName as String
+                            val fileBytes = part.streamProvider().readBytes()
+                            val file = File(fileName)
+                            file.writeBytes(fileBytes)
+                            println("$fileBytes   $fileName")
+                            putObject(Constants.REELS_BUCKET, fileName, fileName) {
+                                if (file.exists())
+                                    file.delete()
+                                url = it + fileName
+                                url.replace(" ", "+")
+                                reel.url = url
+                            }
+                        }
+                    }
+
+                    else -> {}
+                }
+            }
+
             val result = db.insert(ReelsEntity) {
                 set(it.name, reel.name)
                 set(it.userId, reel.userId)
@@ -67,6 +125,7 @@ fun Application.reelsRoutes() {
                 set(it.userProfileUrl, reel.userProfileUrl)
             }
 
+
             if (result == 1)
                 call.respond(HttpStatusCode.OK, BaseModel(data = "Reel uploaded successfully"))
             else
@@ -81,29 +140,9 @@ fun Application.reelsRoutes() {
                 )
         }
 
-        var fileDescription = ""
-        var fileName = ""
-
         post("/uploadReel") {
-            val multipartData = call.receiveMultipart()
 
-            multipartData.forEachPart { part ->
-                when (part) {
-                    is PartData.FormItem -> {
-                        fileDescription = part.value
-                    }
 
-                    is PartData.FileItem -> {
-                        fileName = part.originalFileName as String
-                        var fileBytes = part.streamProvider().readBytes()
-                        File("uploads/$fileName").writeBytes(fileBytes)
-                    }
-
-                    else -> {}
-                }
-            }
-
-            call.respondText("$fileDescription is uploaded to 'uploads/$fileName'")
         }
     }
 

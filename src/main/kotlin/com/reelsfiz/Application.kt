@@ -22,10 +22,10 @@ fun main() {
         configureSecurity()
         configureRouting()
         reelsRoutes()
-        GlobalScope.launch(IO) {
+/*        GlobalScope.launch(IO) {
             putDataInBucket()
 
-        }
+        }*/
 
     }.start(wait = true)
 }
