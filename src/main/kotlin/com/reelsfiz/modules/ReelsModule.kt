@@ -1,4 +1,4 @@
-package com.reelsfiz.reelsModule
+package com.reelsfiz.modules.reelsModule
 
 import com.reelsfiz.Constants
 import com.reelsfiz.db.DatabaseConnection
@@ -32,8 +32,6 @@ import java.io.File
 fun Application.reelsRoutes() {
     val db = DatabaseConnection.database
     routing {
-
-        uploadReel()
         get("/getReels") {
             val reels = db.from(ReelsEntity).select().map {
                 ReelsModel(
@@ -125,7 +123,6 @@ fun Application.reelsRoutes() {
                 set(it.userProfileUrl, reel.userProfileUrl)
             }
 
-
             if (result == 1)
                 call.respond(HttpStatusCode.OK, BaseModel(data = "Reel uploaded successfully"))
             else
@@ -138,11 +135,6 @@ fun Application.reelsRoutes() {
                         statusCode = HttpStatusCode.NotFound.value
                     )
                 )
-        }
-
-        post("/uploadReel") {
-
-
         }
     }
 
