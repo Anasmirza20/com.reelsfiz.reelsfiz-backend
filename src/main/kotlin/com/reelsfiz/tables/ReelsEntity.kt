@@ -15,6 +15,5 @@ object ReelsEntity : Table<Nothing>("reels") {
     val commentCount =          int("commentCount")
     val downloadCount =         int("downloadCount")
     val createdAt =             varchar("createdAt")
-    val timeStamp =             varchar("timeStamp")
     val id =                    int("id").primaryKey()
 }
