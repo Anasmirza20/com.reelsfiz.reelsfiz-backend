@@ -17,6 +17,7 @@ data class ReelsModel(
     var commentCount: Int = 0,
     var downloadCount: Int = 0,
     var createdAt: String? = null,
+    var isAlreadyLiked: Boolean? = null,
     var id: Int = 0
 )
 

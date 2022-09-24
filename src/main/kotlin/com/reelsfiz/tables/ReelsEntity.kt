@@ -14,6 +14,7 @@ object ReelsEntity : Table<Nothing>("reels") {
     val likeCount =             int("likeCount")
     val commentCount =          int("commentCount")
     val downloadCount =         int("downloadCount")
+    val isAlreadyLiked =        boolean("isAlreadyLiked")
     val createdAt =             varchar("createdAt")
     val id =                    int("id").primaryKey()
 }

@@ -4,4 +4,5 @@ object Constants {
     // aws bucket
     const val REELS_BUCKET = "reels-bucket"
     const val REGION = "ap-south-1"
+    const val SUCCESS_MSG = "Success"
 }

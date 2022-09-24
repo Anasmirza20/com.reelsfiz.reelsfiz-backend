@@ -1,8 +1,10 @@
 package com.reelsfiz.modules
 
 import com.reelsfiz.Constants
+import com.reelsfiz.Utils.isFileNameValid
 import com.reelsfiz.db.DatabaseConnection
 import com.reelsfiz.models.BaseModel
+import com.reelsfiz.models.LikeModel
 import com.reelsfiz.models.ReelsKeys.CATEGORY_ID
 import com.reelsfiz.models.ReelsKeys.CREATED_AT
 import com.reelsfiz.models.ReelsKeys.NAME
@@ -14,6 +16,7 @@ import com.reelsfiz.models.ReelsKeys.USER_NAME
 import com.reelsfiz.models.ReelsKeys.USER_PROFILE_URL
 import com.reelsfiz.models.ReelsModel
 import com.reelsfiz.putObject
+import com.reelsfiz.tables.LikeEntity
 import com.reelsfiz.tables.ReelsEntity
 import io.ktor.http.*
 import io.ktor.http.content.*
@@ -25,12 +28,20 @@ import org.ktorm.dsl.*
 import java.io.File
 
 
+private val db = DatabaseConnection.database
+
 fun Application.reelsRoutes() {
-    val db = DatabaseConnection.database
     routing {
         get("/getReels") {
-            val reels = db.from(ReelsEntity).select().map {
-                it.getReelModel()
+            val request = call.request.queryParameters
+            val reels = db.from(ReelsEntity).select().where { ReelsEntity.url.isNotNull() }.map {
+                it.getReelModel().also { reel ->
+                    if (request[USER_ID]?.toInt() == 0)
+                        return@also
+                    reel.isAlreadyLiked =
+                        db.from(LikeEntity).select()
+                            .where { LikeEntity.reelId eq it[ReelsEntity.id]!! and (LikeEntity.userId eq request[USER_ID]?.toInt()!!) }.totalRecords > 0
+                }
             }
             call.respond(
                 HttpStatusCode.OK, BaseModel(
@@ -47,7 +58,7 @@ fun Application.reelsRoutes() {
 
                 var fileName: String
                 val reel = ReelsModel()
-                var url: String?=null
+                var url: String? = null
                 multipartData.forEachPart { part ->
                     when (part) {
                         is PartData.FormItem -> {
@@ -67,15 +78,25 @@ fun Application.reelsRoutes() {
                         is PartData.FileItem -> {
                             kotlin.runCatching {
                                 fileName = part.originalFileName as String
-                                val fileBytes = part.streamProvider().readBytes()
-                                val file = File(fileName)
-                                file.writeBytes(fileBytes)
-                                println("$fileBytes   $fileName")
-                                putObject(Constants.REELS_BUCKET, fileName, fileName) {
-                                    if (file.exists()) file.delete()
-                                    url = it + fileName
-                                    url?.replace(" ", "+")
-                                    reel.url = url
+                                if (fileName.isFileNameValid()) {
+                                    val fileBytes = part.streamProvider().readBytes()
+                                    val file = File(fileName)
+                                    file.writeBytes(fileBytes)
+                                    putObject(Constants.REELS_BUCKET, fileName, fileName) {
+                                        if (file.exists()) file.delete()
+                                        url = it + fileName
+                                        url?.replace(" ", "+")
+                                        reel.url = url
+                                    }
+                                } else {
+                                    call.respond(
+                                        HttpStatusCode.BadRequest, BaseModel<String?>(
+                                            data = null,
+                                            message = "File format not supported",
+                                            success = false,
+                                            statusCode = HttpStatusCode.BadRequest.value
+                                        )
+                                    )
                                 }
                             }.onFailure {
                                 println(it)
@@ -112,11 +133,49 @@ fun Application.reelsRoutes() {
                         data = null, message = it.message, success = false, statusCode = HttpStatusCode.NotFound.value
                     )
                 )
-
             }
         }
+        likeReel()
     }
+}
 
+private fun Route.likeReel() {
+    post("/likeReel") {
+        val request = call.receive<LikeModel>()
+        db.from(LikeEntity).select().where {
+            (LikeEntity.reelId eq request.reelId and (LikeEntity.userId eq request.userId))
+        }.map {
+            call.respond(
+                HttpStatusCode.OK, BaseModel<String?>(
+                    message = "Already Liked"
+                )
+            )
+            return@post
+        }
+        val response = db.insert(LikeEntity) {
+            set(it.reelId, request.reelId)
+            set(it.userId, request.userId)
+        }
+
+        if (response == 1) {
+            db.update(ReelsEntity) {
+                set(
+                    it.likeCount,
+                    db.from(LikeEntity).select().where { LikeEntity.reelId eq request.reelId }.totalRecords
+                )
+                where { ReelsEntity.id eq request.reelId }
+            }
+            call.respond(HttpStatusCode.OK, BaseModel<String?>())
+        } else
+            call.respond(
+                HttpStatusCode.BadRequest, BaseModel<String?>(
+                    data = null,
+                    message = "Bad Request",
+                    success = false,
+                    statusCode = HttpStatusCode.BadRequest.value
+                )
+            )
+    }
 }
 
 private fun QueryRowSet.getReelModel() = ReelsModel(
@@ -132,5 +191,5 @@ private fun QueryRowSet.getReelModel() = ReelsModel(
     categoryId = this[ReelsEntity.categoryId]!!,
     likeCount = this[ReelsEntity.likeCount]!!,
     commentCount = this[ReelsEntity.commentCount]!!,
-    downloadCount = this[ReelsEntity.downloadCount]!!
+    downloadCount = this[ReelsEntity.downloadCount]!!,
 )
