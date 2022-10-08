@@ -1,6 +1,7 @@
 package com.reelsfiz
 
 import com.reelsfiz.modules.categoriesRouting
+import com.reelsfiz.modules.commentModule
 import com.reelsfiz.modules.reelsRoutes
 import com.reelsfiz.modules.userModule
 import com.reelsfiz.plugins.configureRouting
@@ -23,5 +24,6 @@ fun main() {
         reelsRoutes()
         userModule()
         categoriesRouting()
+        commentModule()
     }.start(wait = true)
 }

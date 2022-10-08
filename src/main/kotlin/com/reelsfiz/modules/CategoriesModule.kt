@@ -25,7 +25,7 @@ fun Application.categoriesRouting() {
 }
 
 private fun Route.getCategories() {
-    get("/categories") {
+    get("/getCategories") {
         val categories = db.from(CategoryEntity).select().map {
             CategoryModel(
                 id = it[CategoryEntity.id]!!,

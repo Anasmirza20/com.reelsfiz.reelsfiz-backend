@@ -8,6 +8,7 @@ object ReelsEntity : Table<Nothing>("reels") {
     val url =                   varchar("url")
     val userId =                long("userId")
     val userProfileUrl =        varchar("userProfileUrl")
+    val shareLink =             varchar("shareLink")
     val sizeInMB =              varchar("sizeInMB")
     val categoryId =            int("categoryId")
     val userName =              varchar("userName")

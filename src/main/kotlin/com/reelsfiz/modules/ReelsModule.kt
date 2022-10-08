@@ -1,6 +1,11 @@
 package com.reelsfiz.modules
 
 import com.reelsfiz.Constants
+import com.reelsfiz.Constants.DEFAULT_PAGE_SIZE
+import com.reelsfiz.Extensions.badRequest
+import com.reelsfiz.Extensions.checkNull
+import com.reelsfiz.Extensions.notFound
+import com.reelsfiz.Extensions.success
 import com.reelsfiz.Utils.isFileNameValid
 import com.reelsfiz.db.DatabaseConnection
 import com.reelsfiz.models.BaseModel
@@ -8,7 +13,10 @@ import com.reelsfiz.models.LikeModel
 import com.reelsfiz.models.ReelsKeys.CATEGORY_ID
 import com.reelsfiz.models.ReelsKeys.CREATED_AT
 import com.reelsfiz.models.ReelsKeys.NAME
+import com.reelsfiz.models.ReelsKeys.PAGE_NO
+import com.reelsfiz.models.ReelsKeys.PAGE_SIZE
 import com.reelsfiz.models.ReelsKeys.PATH
+import com.reelsfiz.models.ReelsKeys.SHARE_LINK
 import com.reelsfiz.models.ReelsKeys.SIZE_IN_MB
 import com.reelsfiz.models.ReelsKeys.URL
 import com.reelsfiz.models.ReelsKeys.USER_ID
@@ -33,21 +41,60 @@ private val db = DatabaseConnection.database
 fun Application.reelsRoutes() {
     routing {
         get("/getReels") {
-            val request = call.request.queryParameters
-            val reels = db.from(ReelsEntity).select().where { ReelsEntity.url.isNotNull() }.map {
-                it.getReelModel().also { reel ->
-                    if (request[USER_ID]?.toInt() == 0)
-                        return@also
-                    reel.isAlreadyLiked =
-                        db.from(LikeEntity).select()
-                            .where { LikeEntity.reelId eq it[ReelsEntity.id]!! and (LikeEntity.userId eq request[USER_ID]?.toInt()!!) }.totalRecords > 0
-                }
-            }
-            call.respond(
-                HttpStatusCode.OK, BaseModel(
-                    data = reels, statusCode = HttpStatusCode.OK.value, message = "Success", success = true
-                )
+            call.checkExceptionAndRespond(db.from(ReelsEntity).select().where { ReelsEntity.url.isNotNull() })
+/*            kotlin.runCatching {
+                val request = call.request.queryParameters
+                val reels =
+                    db.from(ReelsEntity).select().where { ReelsEntity.url.isNotNull() }.setLimit(request)
+                call.checkNull(data = reels)
+            }.onFailure {
+                call.badRequest(it.message)
+            }*/
+        }
+
+        get("/getUserReels") {
+            call.checkExceptionAndRespond(db.from(ReelsEntity).select()
+                .where { ReelsEntity.url.isNotNull() and (ReelsEntity.userId eq call.request.queryParameters[USER_ID]?.toLong()!!) })/*kotlin.runCatching {
+                val request = call.request.queryParameters
+                val reels = db.from(ReelsEntity).select()
+                    .where { ReelsEntity.url.isNotNull() and (ReelsEntity.userId eq request[USER_ID]?.toLong()!!) }
+                    .setLimit(request)
+                call.checkNull(data = reels)
+            }.onFailure {
+                call.badRequest(it.message)
+            }*/
+        }
+
+
+        get("/getReelsByCategory") {
+            call.checkExceptionAndRespond(
+                db.from(ReelsEntity).select()
+                    .where { ReelsEntity.url.isNotNull() and (ReelsEntity.categoryId eq call.request.queryParameters[CATEGORY_ID]?.toIntOrNull()!!) }
             )
+            /* kotlin.runCatching {
+                 val request = call.request.queryParameters
+                 val reels = db.from(ReelsEntity).select()
+                     .where { ReelsEntity.url.isNotNull() and (ReelsEntity.categoryId eq request[CATEGORY_ID]?.toIntOrNull()!!) }
+                     .setLimit(request)
+                 call.checkNull(data = reels)
+             }.onFailure {
+                 call.badRequest(it.message)
+             }*/
+        }
+
+        get("/getReelById") {
+            kotlin.runCatching {
+                val request = call.request.queryParameters
+                db.from(ReelsEntity).select()
+                    .where { ReelsEntity.url.isNotNull() and (ReelsEntity.id eq request[Constants.REEL_ID]?.toIntOrNull()!!) }
+                    .map {
+                        call.success(it.getReelModel())
+                        return@get
+                    }
+                call.notFound()
+            }.onFailure {
+                call.badRequest(it.message)
+            }
         }
 
         post("/postReel") {
@@ -68,6 +115,7 @@ fun Application.reelsRoutes() {
                                 URL -> reel.url = part.value
                                 USER_ID -> reel.userId = part.value.toLong()
                                 USER_PROFILE_URL -> reel.userProfileUrl = part.value
+                                SHARE_LINK -> reel.shareLink = part.value
                                 SIZE_IN_MB -> reel.sizeInMB = part.value
                                 CATEGORY_ID -> reel.categoryId = part.value.toInt()
                                 USER_NAME -> reel.userName = part.value
@@ -89,14 +137,7 @@ fun Application.reelsRoutes() {
                                         reel.url = url
                                     }
                                 } else {
-                                    call.respond(
-                                        HttpStatusCode.BadRequest, BaseModel<String?>(
-                                            data = null,
-                                            message = "File format not supported",
-                                            success = false,
-                                            statusCode = HttpStatusCode.BadRequest.value
-                                        )
-                                    )
+                                    call.badRequest("File format not supported")
                                 }
                             }.onFailure {
                                 println(it)
@@ -120,6 +161,7 @@ fun Application.reelsRoutes() {
                     set(it.userName, reel.userName)
                     set(it.sizeInMB, reel.sizeInMB)
                     set(it.userProfileUrl, reel.userProfileUrl)
+                    set(it.shareLink, reel.shareLink)
                 }
 
                 if (result is Int) db.from(ReelsEntity).select().where { ReelsEntity.id eq result }.limit(1)
@@ -128,11 +170,7 @@ fun Application.reelsRoutes() {
                     }
 
             }.onFailure {
-                call.respond(
-                    HttpStatusCode.NotFound, BaseModel<String?>(
-                        data = null, message = it.message, success = false, statusCode = HttpStatusCode.NotFound.value
-                    )
-                )
+                call.badRequest()
             }
         }
         likeReel()
@@ -166,19 +204,11 @@ private fun Route.likeReel() {
                 where { ReelsEntity.id eq request.reelId }
             }
             call.respond(HttpStatusCode.OK, BaseModel<String?>())
-        } else
-            call.respond(
-                HttpStatusCode.BadRequest, BaseModel<String?>(
-                    data = null,
-                    message = "Bad Request",
-                    success = false,
-                    statusCode = HttpStatusCode.BadRequest.value
-                )
-            )
+        } else call.badRequest()
     }
 }
 
-private fun QueryRowSet.getReelModel() = ReelsModel(
+private fun QueryRowSet.getReelModel(request: Parameters? = null) = ReelsModel(
     id = this[ReelsEntity.id]!!,
     name = this[ReelsEntity.name]!!,
     url = this[ReelsEntity.url]!!,
@@ -187,9 +217,36 @@ private fun QueryRowSet.getReelModel() = ReelsModel(
     path = this[ReelsEntity.path]!!,
     userId = this[ReelsEntity.userId]!!,
     userProfileUrl = this[ReelsEntity.userProfileUrl]!!,
-    sizeInMB = this[ReelsEntity.sizeInMB]!!,
+    shareLink = this[ReelsEntity.shareLink],
+    sizeInMB = this[ReelsEntity.sizeInMB],
     categoryId = this[ReelsEntity.categoryId]!!,
     likeCount = this[ReelsEntity.likeCount]!!,
     commentCount = this[ReelsEntity.commentCount]!!,
     downloadCount = this[ReelsEntity.downloadCount]!!,
-)
+).also {
+    if (request != null) it.isAlreadyLiked =
+        if (request[USER_ID].isNullOrEmpty() || request[USER_ID]?.toIntOrNull() == null) false
+        else db.from(LikeEntity).select()
+            .where { LikeEntity.reelId eq this[ReelsEntity.id]!! and (LikeEntity.userId eq request[USER_ID]?.toIntOrNull()!!) }.totalRecords > 0
+
+}
+
+fun Query.setLimit(request: Parameters): List<ReelsModel>? {
+    val pageSize = request[PAGE_SIZE]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
+    val pageNo = request[PAGE_NO]?.toIntOrNull()
+    if (pageNo != null)
+        return this.limit(if (pageNo <= 1) 0 else (pageNo.minus(1)).times(pageSize), pageSize).map {
+            it.getReelModel(request)
+        }
+    return null
+}
+
+private suspend inline fun ApplicationCall.checkExceptionAndRespond(query: Query) {
+    kotlin.runCatching {
+        val request = this.request.queryParameters
+        val reels = query.setLimit(request)
+        this.checkNull(data = reels)
+    }.onFailure {
+        this.badRequest(it.message)
+    }
+}

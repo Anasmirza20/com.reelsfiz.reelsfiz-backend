@@ -1,15 +1,14 @@
 package com.reelsfiz.modules
 
+import com.reelsfiz.Extensions.badRequest
+import com.reelsfiz.Extensions.notFound
+import com.reelsfiz.Extensions.success
 import com.reelsfiz.db.DatabaseConnection
-import com.reelsfiz.models.BaseModel
-import com.reelsfiz.models.ReelsModel
+import com.reelsfiz.models.ReelsKeys
 import com.reelsfiz.models.UserModel
-import com.reelsfiz.tables.ReelsEntity
 import com.reelsfiz.tables.UserEntity
-import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
-import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.ktorm.dsl.*
 
@@ -28,13 +27,7 @@ private fun Route.signUp() {
         val query = db.from(UserEntity).select().limit(1)
         kotlin.runCatching {
             query.where { UserEntity.email eq user.email }.map {
-                call.respond(
-                    HttpStatusCode.OK, BaseModel<UserModel?>(
-                        data = it.getUserModel(),
-                        success = true,
-                        statusCode = HttpStatusCode.OK.value
-                    )
-                )
+                call.success(it.getUserModel())
                 return@post
             }
             db.insertAndGenerateKey(UserEntity) {
@@ -43,34 +36,27 @@ private fun Route.signUp() {
         }.onSuccess {
             if (it is Int) {
                 db.from(UserEntity).select().where { UserEntity.id eq it }.limit(1).map { user ->
-                    call.respond(
-                        HttpStatusCode.OK, BaseModel<UserModel?>(
-                            data = user.getUserModel(),
-                            success = true,
-                            statusCode = HttpStatusCode.OK.value
-                        )
-                    )
+                    call.success(user.getUserModel())
                 }
-
             } else
-                call.respond(
-                    HttpStatusCode.BadRequest,
-                    BaseModel<String?>(
-                        message = "Something went wrong",
-                        success = false,
-                        statusCode = HttpStatusCode.NotFound.value
-                    )
-                )
+                call.badRequest("Something went wrong")
         }.onFailure {
             val message = it.message
-            call.respond(
-                HttpStatusCode.BadRequest,
-                BaseModel<String?>(
-                    message = message,
-                    success = false,
-                    statusCode = HttpStatusCode.NotFound.value
-                )
-            )
+            call.badRequest(message)
+        }
+    }
+
+    get("/getProfile") {
+        kotlin.runCatching {
+            val request = call.request.queryParameters
+            db.from(UserEntity).select()
+                .where { UserEntity.id eq request[ReelsKeys.USER_ID]?.toIntOrNull()!! }.map {
+                    call.success(it.getUserModel())
+                    return@get
+                }
+            call.notFound()
+        }.onFailure {
+            call.badRequest(it.message)
         }
     }
 }
