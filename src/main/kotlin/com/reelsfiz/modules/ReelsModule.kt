@@ -42,14 +42,14 @@ fun Application.reelsRoutes() {
     routing {
         get("/getReels") {
             call.checkExceptionAndRespond(db.from(ReelsEntity).select().where { ReelsEntity.url.isNotNull() })
-/*            kotlin.runCatching {
-                val request = call.request.queryParameters
-                val reels =
-                    db.from(ReelsEntity).select().where { ReelsEntity.url.isNotNull() }.setLimit(request)
-                call.checkNull(data = reels)
-            }.onFailure {
-                call.badRequest(it.message)
-            }*/
+            /*            kotlin.runCatching {
+                            val request = call.request.queryParameters
+                            val reels =
+                                db.from(ReelsEntity).select().where { ReelsEntity.url.isNotNull() }.setLimit(request)
+                            call.checkNull(data = reels)
+                        }.onFailure {
+                            call.badRequest(it.message)
+                        }*/
         }
 
         get("/getUserReels") {
@@ -102,7 +102,6 @@ fun Application.reelsRoutes() {
 
             kotlin.runCatching {
                 val multipartData = call.receiveMultipart()
-
                 var fileName: String
                 val reel = ReelsModel()
                 var url: String? = null
@@ -140,7 +139,7 @@ fun Application.reelsRoutes() {
                                     call.badRequest("File format not supported")
                                 }
                             }.onFailure {
-                                println(it)
+                                call.badRequest(it.message)
                             }
                         }
 
@@ -170,7 +169,7 @@ fun Application.reelsRoutes() {
                     }
 
             }.onFailure {
-                call.badRequest()
+                call.badRequest(it.message)
             }
         }
         likeReel()

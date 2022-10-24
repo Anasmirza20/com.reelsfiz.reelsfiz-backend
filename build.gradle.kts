@@ -52,15 +52,15 @@ dependencies {
 
 
     // aws dependencies
-    implementation("aws.sdk.kotlin:dynamodb:0.17.5-beta")
     implementation("aws.sdk.kotlin:s3:0.17.5-beta")
     implementation("aws.sdk.kotlin:iam:0.17.5-beta")
+
     implementation("org.ktorm:ktorm-support-mysql:3.5.0")
 
 }
 
 ktor {
     fatJar {
-        archiveFileName.set("fat.jar")
+        archiveFileName.set("reelsfiz-eb.jar")
     }
 }

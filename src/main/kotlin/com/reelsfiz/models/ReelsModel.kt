@@ -25,6 +25,7 @@ data class ReelsModel(
 object ReelsKeys {
     const val NAME = "name"
     const val PATH = "path"
+    const val MOBILE = "mobile"
     const val URL = "url"
     const val USER_ID = "userId"
     const val PAGE_SIZE = "pageSize"
@@ -34,6 +35,8 @@ object ReelsKeys {
     const val SIZE_IN_MB = "sizeInMB"
     const val CATEGORY_ID = "categoryId"
     const val USER_NAME = "userName"
+    const val EMAIL = "email"
+    const val AUTH_TOKEN = "authToken"
     const val LIKE_COUNT = "likeCount"
     const val COMMENT_COUNT = "commentCount"
     const val DOWNLOAD_COUNT = "downloadCount"

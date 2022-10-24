@@ -4,10 +4,11 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class UserModel(
-    val userName: String? = null,
-    val email: String,
-    val authToken: String? = null,
-    val profileImageUrl: String? = null,
-    val createdAt: String? = null,
-    val id: Int = 0
+    var userName: String? = null,
+    var email: String? = null,
+    var mobile: String? = null,
+    var authToken: String? = null,
+    var profileImageUrl: String? = null,
+    var createdAt: String? = null,
+    var id: Int = 0
 )

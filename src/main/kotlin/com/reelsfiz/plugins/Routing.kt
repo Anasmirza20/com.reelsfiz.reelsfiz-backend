@@ -14,6 +14,9 @@ fun Application.configureRouting() {
         get("/aatina") {
             call.respondText("Hey Beautiful :)")
         }
+        get("/sunshine") {
+            call.respondText("Hey Sunshine :)")
+        }
         // Static plugin. Try to access `/static/index.html`
         static("/static") {
             resources("static")

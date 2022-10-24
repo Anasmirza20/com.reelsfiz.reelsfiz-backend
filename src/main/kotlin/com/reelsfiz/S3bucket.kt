@@ -4,6 +4,7 @@ import aws.sdk.kotlin.services.s3.S3Client
 import aws.sdk.kotlin.services.s3.model.*
 import aws.smithy.kotlin.runtime.content.asByteStream
 import aws.smithy.kotlin.runtime.content.writeToFile
+import com.reelsfiz.Constants.IMAGES_BUCKET
 import com.reelsfiz.Constants.REELS_BUCKET
 import com.reelsfiz.Constants.REGION
 import java.io.File
@@ -80,6 +81,23 @@ suspend fun putObject(bucketName: String, objectKey: String, objectPath: String,
     S3Client { region = REGION }.use { s3 ->
         s3.putObject(request)
         val url = "https://$REELS_BUCKET.s3.$REGION.amazonaws.com/"
+        result(url)
+    }
+}
+
+suspend fun putImage(bucketName: String, objectKey: String, objectPath: String, result: (String) -> Unit) {
+    val body = File(objectPath).asByteStream()
+    val request = PutObjectRequest {
+        bucket = bucketName
+        key = objectKey
+        contentType = "image/${Utils.getExtension(objectKey)}"
+        body.contentLength?.let { contentLength = it }
+        this.body = body
+    }
+
+    S3Client { region = REGION }.use { s3 ->
+        s3.putObject(request)
+        val url = "https://$IMAGES_BUCKET.s3.$REGION.amazonaws.com/"
         result(url)
     }
 }

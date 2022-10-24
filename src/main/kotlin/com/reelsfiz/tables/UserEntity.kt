@@ -7,6 +7,7 @@ import org.ktorm.schema.varchar
 object UserEntity : Table<Nothing>("users") {
     val userName                    = varchar("userName")
     val email                       = varchar("email")
+    val mobile                       = varchar("mobile")
     val authToken                   = varchar("authToken")
     val profileImageUrl             = varchar("profileImageUrl")
     val createdAt                   = varchar("createdAt")
