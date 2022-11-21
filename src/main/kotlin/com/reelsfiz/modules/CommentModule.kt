@@ -71,14 +71,16 @@ private fun Route.getComments() {
 }
 
 
-private fun QueryRowSet.getCommentModule() = CommentModel(
-    id = this[CommentEntity.id]!!,
-    content = this[CommentEntity.content]!!,
-    username = this[CommentEntity.username]!!,
-    videoName = this[CommentEntity.videoName]!!,
-    createdAt = this[CommentEntity.createdAt]!!,
-    userId = this[CommentEntity.userId]!!,
-    reelId = this[CommentEntity.reelId]!!,
-    userProfileImage = this[CommentEntity.userProfileImage]!!
-)
+private fun QueryRowSet.getCommentModule() = this[CommentEntity.id]?.let {
+    CommentModel(
+        id = it,
+        content = this[CommentEntity.content],
+        username = this[CommentEntity.username],
+        videoName = this[CommentEntity.videoName],
+        createdAt = this[CommentEntity.createdAt],
+        userId = this[CommentEntity.userId],
+        reelId = this[CommentEntity.reelId],
+        userProfileImage = this[CommentEntity.userProfileImage]
+    )
+}
 

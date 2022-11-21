@@ -207,30 +207,32 @@ private fun Route.likeReel() {
     }
 }
 
-private fun QueryRowSet.getReelModel(request: Parameters? = null) = ReelsModel(
-    id = this[ReelsEntity.id]!!,
-    name = this[ReelsEntity.name]!!,
-    url = this[ReelsEntity.url]!!,
-    userName = this[ReelsEntity.userName]!!,
-    createdAt = this[ReelsEntity.createdAt]!!,
-    path = this[ReelsEntity.path]!!,
-    userId = this[ReelsEntity.userId]!!,
-    userProfileUrl = this[ReelsEntity.userProfileUrl]!!,
-    shareLink = this[ReelsEntity.shareLink],
-    sizeInMB = this[ReelsEntity.sizeInMB],
-    categoryId = this[ReelsEntity.categoryId]!!,
-    likeCount = this[ReelsEntity.likeCount]!!,
-    commentCount = this[ReelsEntity.commentCount]!!,
-    downloadCount = this[ReelsEntity.downloadCount]!!,
-).also {
-    if (request != null) it.isAlreadyLiked =
-        if (request[USER_ID].isNullOrEmpty() || request[USER_ID]?.toIntOrNull() == null) false
-        else db.from(LikeEntity).select()
-            .where { LikeEntity.reelId eq this[ReelsEntity.id]!! and (LikeEntity.userId eq request[USER_ID]?.toIntOrNull()!!) }.totalRecords > 0
+private fun QueryRowSet.getReelModel(request: Parameters? = null) = this[ReelsEntity.id]?.let { id ->
+    ReelsModel(
+        id = id,
+        name = this[ReelsEntity.name],
+        url = this[ReelsEntity.url],
+        userName = this[ReelsEntity.userName],
+        createdAt = this[ReelsEntity.createdAt],
+        path = this[ReelsEntity.path],
+        userId = this[ReelsEntity.userId],
+        userProfileUrl = this[ReelsEntity.userProfileUrl],
+        shareLink = this[ReelsEntity.shareLink],
+        sizeInMB = this[ReelsEntity.sizeInMB],
+        categoryId = this[ReelsEntity.categoryId],
+        likeCount = this[ReelsEntity.likeCount]?:0,
+        commentCount = this[ReelsEntity.commentCount]?:0,
+        downloadCount = this[ReelsEntity.downloadCount]?:0,
+    ).also {
+        if (request != null) it.isAlreadyLiked =
+            if (request[USER_ID].isNullOrEmpty() || request[USER_ID]?.toIntOrNull() == null) false
+            else db.from(LikeEntity).select()
+                .where { LikeEntity.reelId eq this[ReelsEntity.id]!! and (LikeEntity.userId eq request[USER_ID]?.toIntOrNull()!!) }.totalRecords > 0
 
+    }
 }
 
-fun Query.setLimit(request: Parameters): List<ReelsModel>? {
+fun Query.setLimit(request: Parameters): List<ReelsModel?>? {
     val pageSize = request[PAGE_SIZE]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
     val pageNo = request[PAGE_NO]?.toIntOrNull()
     if (pageNo != null)

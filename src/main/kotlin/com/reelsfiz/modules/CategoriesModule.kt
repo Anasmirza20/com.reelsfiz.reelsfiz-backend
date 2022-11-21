@@ -27,12 +27,14 @@ fun Application.categoriesRouting() {
 private fun Route.getCategories() {
     get("/getCategories") {
         val categories = db.from(CategoryEntity).select().map {
-            CategoryModel(
-                id = it[CategoryEntity.id]!!,
-                name = it[CategoryEntity.name]!!,
-                image = it[CategoryEntity.image]!!,
-                createdAt = it[CategoryEntity.createdAt]!!
-            )
+            it[CategoryEntity.id]?.let { it1 ->
+                CategoryModel(
+                    id = it1,
+                    name = it[CategoryEntity.name],
+                    image = it[CategoryEntity.image],
+                    createdAt = it[CategoryEntity.createdAt]
+                )
+            }
         }
         call.respond(
             HttpStatusCode.OK, BaseModel(

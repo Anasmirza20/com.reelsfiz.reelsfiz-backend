@@ -28,6 +28,7 @@ object ReelsKeys {
     const val MOBILE = "mobile"
     const val URL = "url"
     const val USER_ID = "userId"
+    const val LOGIN_TYPE = "loginType"
     const val PAGE_SIZE = "pageSize"
     const val PAGE_NO = "pageNo"
     const val USER_PROFILE_URL = "userProfileUrl"

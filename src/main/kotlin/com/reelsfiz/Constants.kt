@@ -9,4 +9,7 @@ object Constants {
     const val USER_ID = "userId"
     const val REEL_ID = "reelId"
     const val DEFAULT_PAGE_SIZE:Int = 5
+    const val EMAIL = "email"
+    const val MOBILE = "mobile"
+
 }

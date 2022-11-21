@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 data class UserModel(
     var userName: String? = null,
     var email: String? = null,
+    var loginType: String? = null,
     var mobile: String? = null,
     var authToken: String? = null,
     var profileImageUrl: String? = null,

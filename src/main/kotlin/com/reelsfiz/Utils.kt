@@ -29,4 +29,26 @@ object Utils {
             return names[1]
         return null
     }
+
+    fun getFileNameFromUrl(uri: String?): String? {
+        if (uri.isNullOrEmpty()) {
+            return null
+        }
+        val slash = uri.lastIndexOf("/") + 1
+        return if (slash >= 1) {
+            uri.substring(slash)
+        } else {
+            // No filename.
+            ""
+        }
+    }
+
+    val AVATARS = listOf(
+        "https://reelsfiz-user-images.s3.ap-south-1.amazonaws.com/avatars/avatar_1.png",
+        "https://reelsfiz-user-images.s3.ap-south-1.amazonaws.com/avatars/avatar_2.png",
+        "https://reelsfiz-user-images.s3.ap-south-1.amazonaws.com/avatars/avatar_3.png",
+        "https://reelsfiz-user-images.s3.ap-south-1.amazonaws.com/avatars/avatar_4.png",
+        "https://reelsfiz-user-images.s3.ap-south-1.amazonaws.com/avatars/avatar_5.png",
+        "https://reelsfiz-user-images.s3.ap-south-1.amazonaws.com/avatars/avatar_6.png"
+    )
 }
